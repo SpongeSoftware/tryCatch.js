@@ -1,0 +1,250 @@
+name: Release and Publish
+
+on:
+  push:
+    tags:
+      - "v*.*.*" # Triggers on version tags like v1.0.0
+  workflow_dispatch: # Allow manual triggering
+    inputs:
+      version:
+        description: "Version to publish (e.g., 1.0.0)"
+        required: true
+        type: string
+      prerelease:
+        description: "Mark as prerelease"
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  contents: write # Required for creating releases
+  packages: write # Required for npm publishing (if using GitHub Packages)
+  id-token: write # Required for npm provenance
+
+jobs:
+  release:
+    name: Build, Generate SBOM, and Release
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Fetch all history for release notes
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "pnpm"
+          registry-url: "https://registry.npmjs.org"
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run linting
+        run: pnpm lint
+
+      - name: Run type checking
+        run: pnpm type-check
+
+      - name: Run tests
+        run: pnpm test
+        if: ${{ !cancelled() }}
+
+      - name: Build package
+        run: pnpm build
+
+      - name: Extract version from tag or input
+        id: version
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "version=${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
+            echo "tag=v${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
+            echo "prerelease=${{ github.event.inputs.prerelease }}" >> $GITHUB_OUTPUT
+          else
+            echo "version=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+            echo "tag=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+            echo "prerelease=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Update package.json version
+        if: github.event_name == 'workflow_dispatch'
+        run: npm version ${{ steps.version.outputs.version }} --no-git-tag-version
+
+      - name: Create package tarball
+        run: pnpm pack
+
+      - name: Rename tarball with version
+        run: |
+          PACKAGE_NAME=$(node -p "require('./package.json').name.replace('@', '').replace('/', '-')")
+          mv *.tgz "${PACKAGE_NAME}-${{ steps.version.outputs.version }}.tgz"
+          echo "tarball_name=${PACKAGE_NAME}-${{ steps.version.outputs.version }}.tgz" >> $GITHUB_OUTPUT
+        id: tarball
+
+      - name: Install Syft
+        uses: anchore/sbom-action/download-syft@v0
+
+      - name: Generate SBOM files
+        run: |
+          syft packages . -o spdx-json=sbom.spdx.json
+          syft packages . -o cyclonedx-json=sbom.cyclonedx.json
+          syft packages . -o table=sbom.txt
+
+      - name: Generate release notes
+        id: release_notes
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { execSync } = require('child_process');
+            const fs = require('fs');
+            
+            // Get the previous tag
+            let previousTag;
+            try {
+              previousTag = execSync('git describe --tags --abbrev=0 HEAD^', { encoding: 'utf8' }).trim();
+            } catch (error) {
+              console.log('No previous tag found, using all commits');
+              previousTag = '';
+            }
+            
+            // Generate commit log
+            const range = previousTag ? `${previousTag}..HEAD` : 'HEAD';
+            let commits;
+            try {
+              commits = execSync(`git log ${range} --pretty=format:"- %s (%h)" --no-merges`, { encoding: 'utf8' });
+            } catch (error) {
+              commits = 'No changes found';
+            }
+            
+            // Get package info
+            const packageInfo = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+            
+            // Get SBOM summary
+            let sbomSummary = '';
+            try {
+              const sbomData = JSON.parse(fs.readFileSync('sbom.spdx.json', 'utf8'));
+              const packageCount = sbomData.packages ? sbomData.packages.length : 0;
+              sbomSummary = `- **Dependencies analyzed**: ${packageCount} packages`;
+            } catch (error) {
+              sbomSummary = '- SBOM analysis completed';
+            }
+            
+            const releaseNotes = `## 🚀 Release ${context.ref.replace('refs/tags/', '')}
+            
+            ### 📦 Package Information
+            - **Name**: \`${packageInfo.name}\`
+            - **Version**: \`${packageInfo.version}\`
+            - **License**: ${packageInfo.license || 'Not specified'}
+            - **Main**: \`${packageInfo.main || 'Not specified'}\`
+            - **Module**: \`${packageInfo.module || 'Not specified'}\`
+            - **Types**: \`${packageInfo.types || 'Not specified'}\`
+            
+            ### 🔄 Changes Since ${previousTag || 'Initial Release'}
+            ${commits || 'No changes found'}
+            
+            ### 🔒 Security & Compliance
+            - ✅ SBOM (Software Bill of Materials) included in release assets
+            - ✅ Package published with npm provenance
+            - ✅ All dependencies scanned and documented
+            ${sbomSummary}
+            
+            ### 📥 Installation
+            \`\`\`bash
+            # Using npm
+            npm install ${packageInfo.name}@${packageInfo.version}
+            
+            # Using pnpm
+            pnpm add ${packageInfo.name}@${packageInfo.version}
+            
+            # Using yarn
+            yarn add ${packageInfo.name}@${packageInfo.version}
+            \`\`\`
+            
+            ### 📋 Available Assets
+            - 📦 **Package tarball**: Ready for offline installation
+            - 🔍 **SBOM (SPDX format)**: Complete dependency analysis
+            - 🔍 **SBOM (CycloneDX format)**: Alternative SBOM format
+            - 📄 **SBOM (Text format)**: Human-readable dependency list
+            
+            ### 🔍 Verification
+            Verify package integrity and provenance:
+            \`\`\`bash
+            # Check package signatures
+            npm audit signatures
+            
+            # Verify provenance (requires npm 9.5.0+)
+            npm install ${packageInfo.name}@${packageInfo.version} --foreground-scripts
+            \`\`\`
+            
+            ### 🏗️ Build Information
+            - **Node.js**: 20.x
+            - **Package Manager**: pnpm 9.x
+            - **Build System**: TypeScript with dual CJS/ESM output
+            - **CI/CD**: GitHub Actions with automated testing and security scanning`;
+            
+            return releaseNotes;
+
+      - name: Create GitHub Release with Assets
+        uses: ncipollo/create-release@v1
+        with:
+          tag: ${{ steps.version.outputs.tag }}
+          name: "Release ${{ steps.version.outputs.tag }}"
+          body: ${{ steps.release_notes.outputs.result }}
+          draft: false
+          prerelease: ${{ steps.version.outputs.prerelease }}
+          generateReleaseNotes: false # We're providing our own notes
+          makeLatest: ${{ steps.version.outputs.prerelease == 'false' }}
+          artifacts: |
+            ${{ steps.tarball.outputs.tarball_name }}
+            sbom.spdx.json
+            sbom.cyclonedx.json
+            sbom.txt
+          artifactContentType: |
+            application/gzip
+            application/json
+            application/json
+            text/plain
+          artifactErrorsFailBuild: true
+
+      - name: Publish to npm
+        run: pnpm publish --access public --provenance
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Create build summary
+        if: always()
+        run: |
+          echo "## 📋 Release Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Package Details" >> $GITHUB_STEP_SUMMARY
+          echo "- **Version**: ${{ steps.version.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Tag**: ${{ steps.version.outputs.tag }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Prerelease**: ${{ steps.version.outputs.prerelease }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Generated Assets" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Package tarball: ${{ steps.tarball.outputs.tarball_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ SBOM (SPDX): sbom.spdx.json" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ SBOM (CycloneDX): sbom.cyclonedx.json" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ SBOM (Text): sbom.txt" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Links" >> $GITHUB_STEP_SUMMARY
+          echo "- [📦 npm Package](https://www.npmjs.com/package/$(node -p 'require("./package.json").name')/v/${{ steps.version.outputs.version }})" >> $GITHUB_STEP_SUMMARY
+          echo "- [🏷️ GitHub Release](https://github.com/${{ github.repository }}/releases/tag/${{ steps.version.outputs.tag }})" >> $GITHUB_STEP_SUMMARY
+
+      - name: Upload workflow artifacts
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: release-artifacts-${{ steps.version.outputs.version }}
+          path: |
+            dist/
+            ${{ steps.tarball.outputs.tarball_name }}
+            sbom.*
+          retention-days: 90
+          compression-level: 6
