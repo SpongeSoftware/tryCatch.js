@@ -24,6 +24,12 @@
 		"pnpm": ">=8.0.0",
 		"npm": ">=9.0.0"
 	},
+	"files": [
+		"./README.md",
+		"./LICENSE.md",
+		"./package.json",
+		"./dist/"
+	],
 	"devDependencies": {
 		"@eslint/js": "^9.27.0",
 		"eslint": "^9.27.0",
