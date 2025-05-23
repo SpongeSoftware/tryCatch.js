@@ -1,9 +1,5 @@
-# @spongesoftware/try-catch
-
-<!-- Replace 'assets/logo.png' with the actual path to your logo image -->
 ![tryCatch.js Logo](assets/logo.png)
 
-[![npm version](https://badge.fury.io/js/%40spongesoftware%2Ftry-catch.svg)](https://badge.fury.io/js/%40spongesoftware%2Ftry-catch)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 A robust wrapper for asynchronous and synchronous operations.
