@@ -1,6 +1,6 @@
 {
-	"name": "@sponge/tryCatch",
-	"version": "1.0.0",
+	"name": "@spongesoftware/tryCatch",
+	"version": "0.1.0",
 	"description": "simplify try catch handling in JS/TS",
 	"author": "Andrew Brunker<andrew@brunker.net.au>",
 	"scripts": {
