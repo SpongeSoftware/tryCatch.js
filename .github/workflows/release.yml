@@ -77,7 +77,7 @@ jobs:
 
       - name: Rename tarball with version
         run: |
-          # PACKAGE_NAME=$(node -p "require('./package.json').name.replace('@', '').replace('/', '-')")
+          PACKAGE_NAME=$(node -p "require('./package.json').name.replace('@', '').replace('/', '-')")
           # mv *.tgz "${PACKAGE_NAME}-${{ steps.version.outputs.version }}.tgz"
           echo "tarball_name=${PACKAGE_NAME}-${{ steps.version.outputs.version }}.tgz" >> $GITHUB_OUTPUT
         id: tarball
@@ -130,9 +130,9 @@ jobs:
               sbomSummary = '- SBOM analysis completed';
             }
             
-            const releaseNotes = `## 🚀 Release ${context.ref.replace('refs/tags/', '')}
+            const releaseNotes = `##  Release ${context.ref.replace('refs/tags/', '')}
             
-            ### 📦 Package Information
+            ###  Package Information
             - **Name**: \`${packageInfo.name}\`
             - **Version**: \`${packageInfo.version}\`
             - **License**: ${packageInfo.license || 'Not specified'}
@@ -140,7 +140,7 @@ jobs:
             - **Module**: \`${packageInfo.module || 'Not specified'}\`
             - **Types**: \`${packageInfo.types || 'Not specified'}\`
             
-            ### 🔄 Changes Since ${previousTag || 'Initial Release'}
+            ###  Changes Since ${previousTag || 'Initial Release'}
             ${commits || 'No changes found'}
             
             ### 🔒 Security & Compliance
@@ -162,12 +162,12 @@ jobs:
             \`\`\`
             
             ### 📋 Available Assets
-            - 📦 **Package tarball**: Ready for offline installation
-            - 🔍 **SBOM (SPDX format)**: Complete dependency analysis
-            - 🔍 **SBOM (CycloneDX format)**: Alternative SBOM format
-            - 📄 **SBOM (Text format)**: Human-readable dependency list
+            -  **Package tarball**: Ready for offline installation
+            -  **SBOM (SPDX format)**: Complete dependency analysis
+            -  **SBOM (CycloneDX format)**: Alternative SBOM format
+            -  **SBOM (Text format)**: Human-readable dependency list
             
-            ### 🔍 Verification
+            ###  Verification
             Verify package integrity and provenance:
             \`\`\`bash
             # Check package signatures
@@ -177,7 +177,7 @@ jobs:
             npm install ${packageInfo.name}@${packageInfo.version} --foreground-scripts
             \`\`\`
             
-            ### 🏗️ Build Information
+            ###  Build Information
             - **Node.js**: 20.x
             - **Package Manager**: pnpm 9.x
             - **Build System**: TypeScript with dual CJS/ESM output
