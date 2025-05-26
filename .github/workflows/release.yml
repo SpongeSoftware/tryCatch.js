@@ -200,12 +200,6 @@ jobs:
             sbom.spdx.json
             sbom.cyclonedx.json
             sbom.txt
-          artifactContentType: |
-            application/gzip
-            application/json
-            application/json
-            text/plain
-          artifactErrorsFailBuild: true
 
       - name: Publish to npm
         run: pnpm publish --access public --provenance
