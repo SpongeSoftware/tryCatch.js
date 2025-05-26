@@ -77,8 +77,8 @@ jobs:
 
       - name: Rename tarball with version
         run: |
-          PACKAGE_NAME=$(node -p "require('./package.json').name.replace('@', '').replace('/', '-')")
-          mv *.tgz "${PACKAGE_NAME}-${{ steps.version.outputs.version }}.tgz"
+          # PACKAGE_NAME=$(node -p "require('./package.json').name.replace('@', '').replace('/', '-')")
+          # mv *.tgz "${PACKAGE_NAME}-${{ steps.version.outputs.version }}.tgz"
           echo "tarball_name=${PACKAGE_NAME}-${{ steps.version.outputs.version }}.tgz" >> $GITHUB_OUTPUT
         id: tarball
 
