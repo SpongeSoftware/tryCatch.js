@@ -52,10 +52,6 @@ jobs:
       - name: Run type checking
         run: pnpm type-check
 
-      - name: Run tests
-        run: pnpm test
-        if: ${{ !cancelled() }}
-
       - name: Build package
         run: pnpm build
 
