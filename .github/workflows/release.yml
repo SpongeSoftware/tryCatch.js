@@ -32,17 +32,17 @@ jobs:
         with:
           fetch-depth: 0 # Fetch all history for release notes
 
-      - name: Install pnpm
-        uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@v4
+        name: Install pnpm
         with:
-          version: 9
+          version: 10
+          run_install: false
 
-      - name: Setup Node.js
+      - name: Install Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "20"
-          cache: "pnpm"
-          registry-url: "https://registry.npmjs.org"
+          node-version: 20
+          cache: 'pnpm'
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
