@@ -202,7 +202,7 @@ jobs:
             sbom.txt
 
       - name: Publish to npm
-        shell: base
+        shell: bash
         run: pnpm publish --access public --no-git-checks
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
