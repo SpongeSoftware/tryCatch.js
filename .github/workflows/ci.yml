@@ -6,6 +6,10 @@ on:
   push:
     branches: [main, develop]
 
+permissions:
+  contents: read
+  actions: write
+
 jobs:
   lint-and-build:
     name: Lint, Type Check, and Build

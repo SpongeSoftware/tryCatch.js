@@ -7,7 +7,7 @@ A robust wrapper for asynchronous and synchronous operations.
 ## Installation
 
 ```bash
-npm install spongesoftware/tryCatch
+npm install @spongesoftware/trycatch
 ```
 
 ## Contributing
