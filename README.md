@@ -1,6 +1,8 @@
 ![tryCatch.js Logo](assets/logo.png)
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+![GitHub License](https://img.shields.io/github/license/spongesoftware/trycatch.js?style=flat-square)
+![GitHub branch check runs](https://img.shields.io/github/check-runs/spongesoftware/trycatch.js/main)
+![GitHub Issues or Pull Requests](https://img.shields.io/github/issues/spongesoftware/trycatch.js?style=flat-square)
 
 A robust wrapper for asynchronous and synchronous operations.
 
