@@ -69,9 +69,36 @@ jobs:
             echo "prerelease=false" >> $GITHUB_OUTPUT
           fi
 
-      - name: Update package.json version
+      - name: Extract and validate current version
+        id: current_version
+        run: |
+          if [ ! -f "package.json" ]; then
+            echo "❌ package.json not found"
+            exit 1
+          fi
+
+          CURRENT_VERSION=$(node -p "require('./package.json').version")
+          if [ -z "$CURRENT_VERSION" ] || [ "$CURRENT_VERSION" = "undefined" ]; then
+           echo "❌ No version found in package.json"
+           exit 1
+          fi
+
+          echo "current=$CURRENT_VERSION" >> $GITHUB_OUTPUT
+          echo "📦 Current version: $CURRENT_VERSION"
+
+      - name: Update package.json version if needed
         if: github.event_name == 'workflow_dispatch'
-        run: npm version ${{ steps.version.outputs.version }} --no-git-tag-version
+        run: |
+          CURRENT_VERSION="${{ steps.current_version.outputs.current }}"
+          TARGET_VERSION="${{ steps.version.outputs.version }}"
+
+          if [ "$CURRENT_VERSION" = "$TARGET_VERSION" ]; then
+            echo "✅ Version already matches: $CURRENT_VERSION"
+          else
+            echo "🔄 Updating version: $CURRENT_VERSION → $TARGET_VERSION"
+            npm version $TARGET_VERSION --no-git-tag-version
+            echo "✅ Version updated successfully"
+          fi
 
       - name: Create package tarball
         run: pnpm pack
