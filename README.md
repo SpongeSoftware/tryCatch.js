@@ -210,10 +210,6 @@ interface Failure<E> {
 
 Contributions are welcome! Please feel free to open an issue or submit a pull request.
 
-## 👨‍💻 Author
-
-**Andrew Brunker** - [andrew@brunker.net.au](mailto:andrew@brunker.net.au)
-
 ## 📄 License
 
 This project is licensed under the Apache-2.0 License - see the [LICENSE.md](LICENSE.md) file for details.
