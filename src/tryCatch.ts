@@ -3,12 +3,12 @@
  * @template T - The type of the successful data
  */
 interface Success<T> {
-  /** The successful result data */
-  data: T
-  /** Always null for successful operations */
-  error: null
-  /** Always true to indicate success */
-  success: true
+	/** The successful result data */
+	data: T
+	/** Always null for successful operations */
+	error: null
+	/** Always true to indicate success */
+	success: true
 }
 
 /**
@@ -16,12 +16,12 @@ interface Success<T> {
  * @template E - The type of the error
  */
 interface Failure<E> {
-  /** Always null for failed operations */
-  data: null
-  /** The error that occurred */
-  error: E
-  /** Always false to indicate failure */
-  success: false
+	/** Always null for failed operations */
+	data: null
+	/** The error that occurred */
+	error: E
+	/** Always false to indicate failure */
+	success: false
 }
 
 /**
@@ -31,7 +31,7 @@ interface Failure<E> {
  * @template T - The type of the successful data (defaults to unknown)
  * @template E - The type of the error (defaults to Error)
  */
-type Result<T = unknown, E = Error> = Success<T> | Failure<E>;
+type Result<T = unknown, E = Error> = Success<T> | Failure<E>
 
 /**
  * Wraps an async operation in a try-catch block and returns a Result type.
@@ -83,22 +83,22 @@ type Result<T = unknown, E = Error> = Success<T> | Failure<E>;
  * ```
  */
 export const tryCatch = async <T = unknown, E = Error>(
-  promise: Promise<T>
+	promise: Promise<T>
 ): Promise<Result<T, E>> => {
-  try {
-    const result = await promise
-    return {
-      data: result,
-      error: null,
-      success: true
-    }
-  } catch (error) {
-    return {
-      data: null,
-      error: error as E,
-      success: false
-    }
-  }
+	try {
+		const result = await promise
+		return {
+			data: result,
+			error: null,
+			success: true
+		} as const
+	} catch (error) {
+		return {
+			data: null,
+			error: error as E,
+			success: false
+		} as const
+	}
 }
 
 /**
@@ -151,20 +151,20 @@ export const tryCatch = async <T = unknown, E = Error>(
  * ```
  */
 export const tryCatchSync = <T = unknown, E = Error>(
-  callback: () => T
+	callback: () => T
 ): Result<T, E> => {
-  try {
-    const result = callback()
-    return {
-      data: result,
-      error: null,
-      success: true
-    }
-  } catch (error) {
-    return {
-      data: null,
-      error: error as E,
-      success: false
-    }
-  }
+	try {
+		const result = callback()
+		return {
+			data: result,
+			error: null,
+			success: true
+		} as const
+	} catch (error) {
+		return {
+			data: null,
+			error: error as E,
+			success: false
+		} as const
+	}
 }
